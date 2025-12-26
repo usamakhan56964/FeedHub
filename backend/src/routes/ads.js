@@ -1,51 +1,65 @@
+// Core server & routing
 import express from 'express';
+
+// Database connection
 import pool from '../config/db.js';
+
+// File upload handling
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+
+// External API calls (webhooks)
 import axios from 'axios';
+
+// AI services for content & image generation
 import { generateAdContent, generatePromoImage } from "../services/aiService.js";
 
 const router = express.Router();
 
-/* ---------------------- MULTER CONFIG ---------------------- */
+/* ---------- Media Upload Configuration ---------- */
 
+// Local uploads directory
 const uploadDir = 'uploads';
 
+// Ensure upload directory exists
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
+// Configure file storage and naming
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, file.fieldname + '-' + unique + ext);
   }
 });
 
+// Allow only images or videos
 function fileFilter(req, file, cb) {
   const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'video/mp4', 'video/quicktime'];
-  if (allowed.includes(file.mimetype)) cb(null, true);
-  else cb(new Error('Unsupported file type'), false);
+  allowed.includes(file.mimetype)
+    ? cb(null, true)
+    : cb(new Error('Unsupported file type'), false);
 }
 
+// Multer instance with size limits
 const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
-/* ---------------------- GET /ads ---------------------- */
+/* ---------- GET Ads Feed ---------- */
 
 router.get('/', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const offset = parseInt(req.query.offset) || 0;
 
+    // Fetch ads
     const adsResult = await pool.query(
       `
       SELECT id, user_id, category, sub_category, title, description, price, created_at
@@ -56,11 +70,11 @@ router.get('/', async (req, res) => {
       [limit, offset]
     );
 
-    const adIds = adsResult.rows.map((ad) => ad.id);
-
+    // Fetch related media
+    const adIds = adsResult.rows.map(ad => ad.id);
     let mediaMap = {};
 
-    if (adIds.length > 0) {
+    if (adIds.length) {
       const mediaResult = await pool.query(
         `
         SELECT id, ad_id, media_url, media_type
@@ -70,13 +84,14 @@ router.get('/', async (req, res) => {
         [adIds]
       );
 
-      mediaResult.rows.forEach((m) => {
+      mediaResult.rows.forEach(m => {
         if (!mediaMap[m.ad_id]) mediaMap[m.ad_id] = [];
         mediaMap[m.ad_id].push(m);
       });
     }
 
-    const adsWithMedia = adsResult.rows.map((ad) => ({
+    // Combine ads with media
+    const adsWithMedia = adsResult.rows.map(ad => ({
       ...ad,
       media: mediaMap[ad.id] || []
     }));
@@ -88,24 +103,15 @@ router.get('/', async (req, res) => {
   }
 });
 
-
-
-/* ---------------------- POST /ads ---------------------- */
+/* ---------- POST Create Ad ---------- */
 
 router.post('/', upload.array('media', 10), async (req, res) => {
-  console.log("🚨 POST /api/ads HIT");
   const client = await pool.connect();
 
   try {
-    const {
-      user_id,
-      category,
-      sub_category,
-      title,
-      description,
-      price
-    } = req.body;
+    const { user_id, category, sub_category, title, description, price } = req.body;
 
+    // Basic validation
     if (!user_id || !category || !sub_category || !title || !description || !price) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
@@ -114,13 +120,13 @@ router.post('/', upload.array('media', 10), async (req, res) => {
       return res.status(400).json({ message: 'Price must be numeric' });
     }
 
-    const files = req.files || [];
-    if (files.length === 0) {
+    if (!req.files?.length) {
       return res.status(400).json({ message: 'At least one media file is required' });
     }
 
     await client.query('BEGIN');
 
+    // Insert ad
     const adResult = await client.query(
       `
       INSERT INTO ads (user_id, category, sub_category, title, description, price)
@@ -132,28 +138,30 @@ router.post('/', upload.array('media', 10), async (req, res) => {
 
     const ad = adResult.rows[0];
 
-    const mediaInserts = files.map((file) => {
-      const isVideo = file.mimetype.startsWith('video/');
-      const mediaType = isVideo ? 'video' : 'image';
-      const mediaUrl = `/uploads/${file.filename}`;
+    // Insert media
+    const mediaResults = await Promise.all(
+      req.files.map(file =>
+        client.query(
+          `
+          INSERT INTO media (ad_id, media_url, media_type)
+          VALUES ($1, $2, $3)
+          RETURNING *
+          `,
+          [
+            ad.id,
+            `/uploads/${file.filename}`,
+            file.mimetype.startsWith('video/') ? 'video' : 'image'
+          ]
+        )
+      )
+    );
 
-      return client.query(
-        `
-        INSERT INTO media (ad_id, media_url, media_type)
-        VALUES ($1, $2, $3)
-        RETURNING id, ad_id, media_url, media_type
-        `,
-        [ad.id, mediaUrl, mediaType]
-      );
-    });
-
-    const mediaResults = await Promise.all(mediaInserts);
-    const media = mediaResults.map((r) => r.rows[0]);
+    const media = mediaResults.map(r => r.rows[0]);
 
     await client.query('COMMIT');
 
-    
-// after await client.query('COMMIT');
+    /* ---------- AI & Webhook (Async, non-blocking) ---------- */
+
     (async () => {
       try {
         const ai = await generateAdContent(ad);
@@ -165,45 +173,22 @@ router.post('/', upload.array('media', 10), async (req, res) => {
           (ad_id, ai_description, hashtags, promo_image_url)
           VALUES ($1, $2, $3, $4)
           `,
-        [ad.id, ai.description, ai.hashtags, promoImage]
+          [ad.id, ai.description, ai.hashtags, promoImage]
         );
-
-        console.log("✅ AI content saved");
       } catch (err) {
-        console.error("❌ AI generation failed:", err.message);
+        console.error('AI generation failed:', err.message);
       }
     })();
 
-
-    console.log('✅ COMMIT DONE');
-    console.log('📤 SENDING WEBHOOK PAYLOAD:', {
-    title: ad.title,
-    price: ad.price,
-    mediaCount: media.length
-  });
-
-try {
-  const response = await axios.post(
-    'http://localhost:5000/webhook/whatsapp',
-    {
-      ...ad,
-      media
-    },
-    {
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    // Send webhook
+    try {
+      await axios.post('http://localhost:5000/webhook/whatsapp', { ...ad, media });
+    } catch (err) {
+      console.error('Webhook error:', err.message);
     }
-  );
 
-  console.log('✅ WEBHOOK RESPONSE:', response.data);
-} catch (err) {
-  console.error('❌ WEBHOOK ERROR:', err.response?.data || err.message);
-}
-   res.status(201).json({
-      message: 'Ad created successfully',
-      ad: { ...ad, media }
-    });
+    res.status(201).json({ message: 'Ad created successfully', ad: { ...ad, media } });
+
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('POST /ads error:', err);

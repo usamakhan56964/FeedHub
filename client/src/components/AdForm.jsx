@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { createAd } from '../api/adsApi';
 import './AdForm.css';
 
+/*
+ * Static category → sub-category mapping
+ * Used to dynamically populate dropdowns
+ */
 const CATEGORY_OPTIONS = {
   Electronics: ['Mobiles', 'Laptops', 'Accessories'],
   Vehicles: ['Cars', 'Bikes', 'Parts'],
@@ -9,6 +13,11 @@ const CATEGORY_OPTIONS = {
 };
 
 export default function AdForm({ onSuccess }) {
+
+  /*
+   * Main ad form state
+   * user_id is hardcoded for now (can be replaced with auth user later)
+   */
   const [form, setForm] = useState({
     user_id: '1',
     category: '',
@@ -18,14 +27,20 @@ export default function AdForm({ onSuccess }) {
     price: ''
   });
 
+  // Media handling states
   const [mediaFiles, setMediaFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [isVideoSelected, setIsVideoSelected] = useState(false);
 
+  // UI feedback states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  /**
+   * Handles text/select input changes
+   * Resets sub-category when category changes
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -36,6 +51,12 @@ export default function AdForm({ onSuccess }) {
     }));
   };
 
+  /**
+   * Handles media uploads
+   * Enforces:
+   * - Either multiple images OR one video
+   * - No mixing images + video
+   */
   const handleMediaChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -57,26 +78,37 @@ export default function AdForm({ onSuccess }) {
     setIsVideoSelected(hasVideo);
     setMediaFiles(files);
 
+    // Generate local preview URLs
     const urls = files.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
   };
 
+  /**
+   * Client-side validation before submit
+   */
   const validate = () => {
     if (!form.category || !form.sub_category || !form.title || !form.description || !form.price) {
       setError('Please fill in all required fields.');
       return false;
     }
+
     if (isNaN(Number(form.price))) {
       setError('Price must be numeric.');
       return false;
     }
+
     if (mediaFiles.length === 0) {
       setError('Please upload at least one media file.');
       return false;
     }
+
     return true;
   };
 
+  /**
+   * Form submission handler
+   * Sends multipart/form-data to backend
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccessMsg('');
@@ -86,6 +118,7 @@ export default function AdForm({ onSuccess }) {
       setLoading(true);
       setError('');
 
+      // Build FormData payload
       const fd = new FormData();
       Object.entries(form).forEach(([key, value]) => fd.append(key, value));
       mediaFiles.forEach((file) => fd.append('media', file));
@@ -93,6 +126,7 @@ export default function AdForm({ onSuccess }) {
       const res = await createAd(fd);
       setSuccessMsg('Ad posted successfully!');
 
+      // Reset form after success
       setForm({
         user_id: '1',
         category: '',
@@ -106,7 +140,9 @@ export default function AdForm({ onSuccess }) {
       setPreviewUrls([]);
       setIsVideoSelected(false);
 
+      // Notify parent component (optional)
       if (onSuccess) onSuccess(res.ad);
+
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to create ad.';
       setError(msg);
@@ -115,6 +151,7 @@ export default function AdForm({ onSuccess }) {
     }
   };
 
+  // Derived sub-categories based on selected category
   const subCategories = CATEGORY_OPTIONS[form.category] || [];
 
   return (
@@ -125,8 +162,8 @@ export default function AdForm({ onSuccess }) {
       {successMsg && <div className="adform-success">{successMsg}</div>}
 
       <form onSubmit={handleSubmit} className="adform-form">
-        
-        {/* Category */}
+
+        {/* Category selector */}
         <div className="adform-field">
           <label>Category *</label>
           <select
@@ -142,7 +179,7 @@ export default function AdForm({ onSuccess }) {
           </select>
         </div>
 
-        {/* Sub-category */}
+        {/* Sub-category selector */}
         <div className="adform-field">
           <label>Sub-category *</label>
           <select
@@ -195,7 +232,7 @@ export default function AdForm({ onSuccess }) {
           />
         </div>
 
-        {/* Media uploader */}
+        {/* Media upload */}
         <div className="adform-field">
           <label>Media (multiple images or one video) *</label>
           <input
@@ -210,7 +247,7 @@ export default function AdForm({ onSuccess }) {
           </div>
         </div>
 
-        {/* Preview */}
+        {/* Media preview */}
         {previewUrls.length > 0 && (
           <div className="adform-preview-section">
             <div className="adform-preview-title">Preview:</div>
@@ -233,4 +270,3 @@ export default function AdForm({ onSuccess }) {
     </div>
   );
 }
-

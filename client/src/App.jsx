@@ -56,7 +56,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import ProtectedRoute from "./forms/ProtectedRoute.jsx";
 
-import AdFeed from "./components/AdFeed.jsx";
+import AdFeed from "./pages/AdFeed.jsx";
 import AdForm from "./components/AdForm.jsx";
 import Login from "./forms/Login.jsx";
 import Register from "./forms/Register.jsx";

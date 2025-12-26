@@ -1,8 +1,13 @@
+// src/pages/AdFeed.jsx
+
+// React hooks for state and lifecycle
 import { useEffect, useState } from 'react';
+// API call to fetch ads from backend
 import { fetchAds } from '../api/adsApi';
 import { useNavigate } from "react-router-dom";
 import './AdFeed.css';
 
+// Utility: formats backend timestamp into readable date/time
 function formatDate(dateString) {
   const date = new Date(dateString);
   return date.toLocaleString();
@@ -10,23 +15,33 @@ function formatDate(dateString) {
 
 export default function AdFeed() {
 
+  // Holds all ads fetched from backend
   const [ads, setAds] = useState([]);
+
+  // UI states for async loading & errors
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Router navigation instance
   const navigate = useNavigate();
 
+  // Clears auth token and redirects user to login
   const handleLogout = () => {
-  localStorage.removeItem("token");
-  navigate("/login", { replace: true });
-}
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
+  };
 
+  // Fetch ads once when feed loads
   useEffect(() => {
     const loadAds = async () => {
       try {
         setLoading(true);
         setError('');
+
+        // Call backend API
         const data = await fetchAds();
+
+        // Save ads list (fallback to empty array)
         setAds(data.data || []);
       } catch (err) {
         console.error(err);
@@ -35,40 +50,53 @@ export default function AdFeed() {
         setLoading(false);
       }
     };
+
     loadAds();
   }, []);
 
+  // Simple UI feedback states
   if (loading) return <div className="loading">Loading ads...</div>;
   if (error) return <div className="error">{error}</div>;
 
   return (
     <>
-      {/* NAVBAR */}
+      {/* Top navigation bar */}
       <nav className="navbar">
-        {/*<button className="nav-btn create-btn">Create Ad</button>*/}
+        {/* Navigate to ad creation page */}
         <button
-          className="nav-btn create-btn"onClick={() => navigate("/ads/new")}>
+          className="nav-btn create-btn"
+          onClick={() => navigate("/ads/new")}
+        >
           Create Ad
         </button>
 
         <h1 className="nav-title">FEED HUB</h1>
-        {/*<button className="nav-btn logout-btn">Sign Out</button>*/}
+
+        {/* Logout button */}
         <button className="nav-btn logout-btn" onClick={handleLogout}>
           Sign Out
         </button>
       </nav>
 
-      {/* FEED CONTAINER */}
+      {/* Feed container */}
       <div className="feed-container">
+
+        {/* Empty state */}
         {ads.length === 0 && <div className="no-ads">No ads yet.</div>}
 
         <div className="ads-grid">
           {ads.map((ad) => {
+
+            // Use first media as thumbnail
             const thumbnail = ad.media && ad.media[0];
+
+            // Detect media type for correct rendering
             const isVideo = thumbnail && thumbnail.media_type === 'video';
 
             return (
               <div key={ad.id} className="ad-card">
+
+                {/* Media preview (image or video) */}
                 {thumbnail && (
                   <div className="media-wrapper">
                     {isVideo ? (
@@ -87,52 +115,39 @@ export default function AdFeed() {
                   </div>
                 )}
 
-                {/*<div className="ad-content">
-                  <h3 className="ad-title">{ad.title}</h3>
-                  <div className="ad-price">Rs {ad.price}</div>
-                  <div className="ad-category">
-                    {ad.category} &raquo; {ad.sub_category}
-                  </div>
-                  <div className="ad-date">Posted: {formatDate(ad.created_at)}</div>
-                  <p className="ad-description">{ad.description}</p>
-                </div>*/}
-                
-                
-                  <div className="ad-content">
+                {/* Ad content */}
+                <div className="ad-content">
                   <h3 className="ad-title">{ad.title}</h3>
 
-                  {/* AI badge (only if AI content exists) */}
+                  {/* Shows only if AI-generated content exists */}
                   {ad.ai_description && (
-                  <div className="ai-badge">✨ AI Generated</div>
+                    <div className="ai-badge">✨ AI Generated</div>
                   )}
 
                   <div className="ad-price">Rs {ad.price}</div>
 
                   <div className="ad-category">
-                  {ad.category} &raquo; {ad.sub_category}
+                    {ad.category} &raquo; {ad.sub_category}
                   </div>
 
                   <div className="ad-date">
-                  Posted: {formatDate(ad.created_at)}
+                    Posted: {formatDate(ad.created_at)}
                   </div>
 
-                {/* AI-aware description */}
-                <p className="ad-description">
-                {ad.ai_description || ad.description}
-                </p>
+                  {/* Prefer AI description, fallback to user-written one */}
+                  <p className="ad-description">
+                    {ad.ai_description || ad.description}
+                  </p>
 
-                {/* AI hashtags */}
-                {ad.hashtags && ad.hashtags.length > 0 && (
-                <div className="hashtags">
-                {ad.hashtags.map((tag, i) => (
-                <span key={i} className="hashtag">{tag}</span>
-                ))}
+                  {/* Render AI hashtags if available */}
+                  {ad.hashtags && ad.hashtags.length > 0 && (
+                    <div className="hashtags">
+                      {ad.hashtags.map((tag, i) => (
+                        <span key={i} className="hashtag">{tag}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                )}
-              </div>
-
-
-
               </div>
             );
           })}
@@ -141,4 +156,3 @@ export default function AdFeed() {
     </>
   );
 }
-

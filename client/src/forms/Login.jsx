@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-/*import { FcGoogle } from "react-icons/fc";*/
+
+// Google icon asset for OAuth button
 import GoogleIcon from "../assets/google.svg";
+
 import "./Auth.css";
 
 export default function Login() {
   const navigate = useNavigate();
 
+  // Auto-redirect user if already authenticated
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -15,32 +18,41 @@ export default function Login() {
     }
   }, []);
 
+  // Login form state
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
 
+  // UI feedback states
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Updates form fields dynamically
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Handles email/password login
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
+      // Authenticate user via backend
       const res = await axios.post(
         "http://localhost:5000/api/auth/login",
         form
       );
 
+      // Persist JWT for protected routes
       localStorage.setItem("token", res.data.token);
-      navigate("/ads"); // ✅ redirect here
+
+      // Redirect to ads feed on success
+      navigate("/ads");
     } catch (err) {
+      // Show backend error or fallback message
       setError(err.response?.data?.error || "Invalid credentials");
     } finally {
       setLoading(false);
@@ -52,6 +64,7 @@ export default function Login() {
       <div className="auth-card">
         <h2>Welcome Back</h2>
 
+        {/* Authentication error message */}
         {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -73,27 +86,36 @@ export default function Login() {
             required
           />
 
+          {/* Email/password login */}
           <button type="submit" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </button>
 
-          <button type="button" className="google-btn" onClick={() => 
-            window.location.href ="http://localhost:5000/api/auth/google"}>
-           <img src={GoogleIcon} alt="Google" className="google-icon" />
+          {/* Google OAuth redirect */}
+          <button
+            type="button"
+            className="google-btn"
+            onClick={() =>
+              (window.location.href =
+                "http://localhost:5000/api/auth/google")
+            }
+          >
+            <img src={GoogleIcon} alt="Google" className="google-icon" />
             Continue with Google
-            </button>
+          </button>
 
-
+          {/* Switch to registration */}
           <div className="auth-switch">
             Don't have an account?{" "}
-            <span onClick={() => navigate("/register")} className="auth-link">
-            Create Account
+            <span
+              onClick={() => navigate("/register")}
+              className="auth-link"
+            >
+              Create Account
             </span>
           </div>
-
         </form>
       </div>
     </div>
   );
 }
-
