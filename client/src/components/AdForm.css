@@ -1,0 +1,179 @@
+/* Container */
+.adform-container {
+  max-width: 650px;
+  width: 100%;
+  margin: 40px auto;
+  padding: 28px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  transition: 0.3s ease;
+}
+
+/* Title */
+.adform-title {
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Alerts */
+.adform-error {
+  color: #ef4444;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.adform-success {
+  color: #10b981;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+/* Form */
+.adform-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Field */
+.adform-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Inputs */
+.adform-input,
+.adform-textarea,
+.adform-file {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 15px;
+  transition: 0.2s ease;
+}
+
+.adform-input:focus,
+.adform-textarea:focus {
+  border-color: #4f46e5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.2);
+}
+
+/* Textarea */
+.adform-textarea {
+  resize: vertical;
+}
+
+/* Rule text */
+.adform-rule {
+  font-size: 12px;
+  color: #555;
+}
+
+/* Preview section */
+.adform-preview-section {
+  margin-top: 10px;
+}
+
+.adform-preview-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.adform-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+
+.adform-preview-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.adform-preview-video {
+  width: 100%;
+  border-radius: 10px;
+}
+
+/* Submit button */
+.adform-submit {
+  padding: 14px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.adform-submit:hover {
+  background: #4338ca;
+}
+
+.adform-submit:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ----------------------------- */
+/* RESPONSIVE BREAKPOINTS        */
+/* ----------------------------- */
+
+/* Tablets */
+@media (max-width: 768px) {
+  .adform-container {
+    padding: 22px;
+    margin: 20px;
+  }
+
+  .adform-preview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .adform-container {
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .adform-title {
+    font-size: 22px;
+  }
+
+  .adform-input,
+  .adform-textarea {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .adform-preview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  }
+
+  .adform-preview-img {
+    height: 100px;
+  }
+}
+
+/* Ultra-wide screens */
+@media (min-width: 1600px) {
+  .adform-container {
+    max-width: 750px;
+    padding: 36px;
+  }
+
+  .adform-title {
+    font-size: 30px;
+  }
+}
