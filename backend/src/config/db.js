@@ -1,10 +1,10 @@
 import dotenv from 'dotenv';
-dotenv.config(); // ✅ MUST be first
+dotenv.config(); // MUST be first
 
 import pkg from 'pg';
 const { Pool } = pkg;
 
-console.log("✅ db.js LOADED");
+console.log("db.js LOADED");
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
 const pool = new Pool({
@@ -12,8 +12,8 @@ const pool = new Pool({
 });
 
 pool.connect()
-  .then(() => console.log("✅ Connected to PostgreSQL"))
-  .catch(err => console.error("❌ DB Connection Error:", err));
+  .then(() => console.log(" Connected to PostgreSQL"))
+  .catch(err => console.error(" DB Connection Error:", err));
 
 export default pool;
 
