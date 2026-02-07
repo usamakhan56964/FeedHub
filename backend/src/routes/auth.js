@@ -1,4 +1,4 @@
-console.log("✅ USING THIS auth.js FILE");
+console.log(" USING THIS auth.js FILE");
 
 
 import express from 'express';
@@ -101,43 +101,7 @@ router.get(
   }
 );
 
-
-
-
-// ✅ LOGIN
-/*router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    const user = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
-
-    if (user.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
-
-    const validPassword = await bcrypt.compare(password, user.rows[0].password_hash);
-
-    if (!validPassword) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign(
-      { id: user.rows[0].id },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    res.json({ token });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});*/
-
-// ✅ LOGIN
+//  LOGIN
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -184,7 +148,7 @@ router.post('/login', async (req, res) => {
 
 
 
-// ✅ GET LOGGED-IN USER
+//  GET LOGGED-IN USER
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await pool.query(
