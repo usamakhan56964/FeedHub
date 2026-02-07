@@ -1,6 +1,6 @@
-console.log("🔥🔥🔥 BACKEND INSTANCE ID:", process.pid);
+console.log("🔥 BACKEND INSTANCE ID:", process.pid);
 import dotenv from 'dotenv';
-dotenv.config();   // ✅ MUST be first
+dotenv.config();   //  MUST be first
 
 import express from 'express';
 import cors from 'cors';
@@ -13,8 +13,8 @@ import "./config/passport.js";
 
 
 
-console.log("✅ index.js loaded");
-console.log("✅ Attempting to load auth routes...");
+console.log(" index.js loaded");
+console.log(" Attempting to load auth routes...");
 console.log(authRoutes);
 
 const app = express();
@@ -25,7 +25,7 @@ app.use(cors());
 app.use(express.json());
 
 
-// ✅ MUST be BEFORE routes
+// File Uploader MUST be BEFORE routes
 app.use('/uploads', express.static('uploads'));
 
 app.use('/webhook', webhookRoutes);
