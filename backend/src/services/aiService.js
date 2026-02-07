@@ -6,7 +6,7 @@ const openai = new OpenAI({
 
 
 
-/* 🔐 SAFE JSON CLEANER */
+/* SAFE JSON CLEANER For Generative AI */
 function extractJson(text) {
   return text
     .replace(/```json/g, '')
